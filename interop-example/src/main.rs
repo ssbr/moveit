@@ -20,19 +20,27 @@ use moveit::emplace;
 use moveit::Emplace as _;
 
 fn main() {
-  let s = Box::emplace(InlineString::from_bytes(b"Hello!"));
-  println!("{:p} = {:?}", s.c_str(), s.c_str());
+  // let s = Box::emplace(InlineString::from_bytes(b"Hello!"));
+  // println!("{:p} = {:?}", s.c_str(), s.c_str());
 
-  emplace!(let mut s2 = ctor::copy(&*s));
-  println!("{:p} = {:?}", s2.c_str(), s2.c_str());
-  for i in 0u8..40 {
-    s2.as_mut().push_back(b'a' + i);
-    println!("{:p} = {:?}", s2.c_str(), s2.c_str());
-  }
-  println!("{:p} = {:?}", s.c_str(), s.c_str());
+  // emplace!(let mut s2 = ctor::copy(&*s));
+  // println!("{:p} = {:?}", s2.c_str(), s2.c_str());
+  // for i in 0u8..40 {
+  //   s2.as_mut().push_back(b'a' + i);
+  //   println!("{:p} = {:?}", s2.c_str(), s2.c_str());
+  // }
+  // println!("{:p} = {:?}", s.c_str(), s.c_str());
 
-  emplace!(let mut s3 = ctor::mov(s));
-  while !s3.empty() {
-    println!("{}", s3.as_mut().pop_back());
-  }
+  // emplace!(let mut s3 = ctor::mov(s));
+  // while !s3.empty() {
+  //   println!("{}", s3.as_mut().pop_back());
+  // }
+
+  // using APIs:
+  let mut s = Box::emplace(InlineString::from_bytes(b"Hello!"));
+  ffi::TakeByRR(s.as_mut(), 1);
+  // use-after-(maybe)-move compiles though:
+  ffi::TakeByValueUsingMutRef(s.as_mut());
+  // okay, what about actual destructive move?
+  ffi::TakeByValueUsingCtor(ctor::mov(s));
 }

@@ -116,4 +116,15 @@ char ffi_InlineString_pop_back(InlineString* self) {
   TRACE("InlineString::pop_back(%p)", self);
   return self->pop_back();
 }
+
+void ffi_TakeByValue(InlineString* s) {
+  TRACE("TakeByValue(%p)", s);
+  TakeByValue(std::move(*s));
+}
+
+void ffi_TakeByRR(InlineString* s, int x) {
+  TRACE("TakeByValue(%p)", s);
+  TakeByRR(std::move(*s), x);
+}
+
 }  // extern "C"

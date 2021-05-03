@@ -82,3 +82,17 @@ class InlineString {
 
 static_assert(sizeof(InlineString) / sizeof(std::uintptr_t) == 3);
 static_assert(alignof(InlineString) == alignof(std::uintptr_t));
+
+// APIs that use it:
+
+// Always takes InlineString.
+inline void TakeByValue(InlineString s) {
+  (void)s;
+}
+
+// Sometimes takes InlineString.
+inline void TakeByRR(InlineString&& s, int x) {
+  if (x & 1) {
+    TakeByValue(std::move(s));
+  }
+}

@@ -16,6 +16,7 @@
 
 use std::ffi::c_void;
 use std::ffi::CStr;
+use std::os::raw::c_int;
 use std::marker::PhantomPinned;
 use std::mem;
 use std::mem::MaybeUninit;
@@ -74,6 +75,9 @@ extern "C" {
   fn ffi_InlineString_clear(this: *mut InlineString);
   fn ffi_InlineString_push_back(this: *mut InlineString, c: u8);
   fn ffi_InlineString_pop_back(this: *mut InlineString) -> u8;
+
+  fn ffi_TakeByValue(s: *mut InlineString);
+  fn ffi_TakeByRR(s: *mut InlineString, x: c_int);
 }
 
 #[repr(C)]
@@ -168,6 +172,37 @@ impl InlineString {
         index,
       ))
     }
+  }
+}
+
+// Two ideas for how to wrap APIs that take an InlineString by value:
+
+// take 1: allows destructively moving; requires moving twice.
+pub fn TakeByValueUsingCtor(value: impl Ctor<Output=InlineString>) {
+  let mut new_loc = MaybeUninit::uninit();
+  unsafe {
+    let pinned_new = Pin::new_unchecked(&mut new_loc);
+    value.ctor(pinned_new);
+  }
+  unsafe {
+    ffi_TakeByValue(new_loc.as_mut_ptr());
+    ffi_InlineString_dtor(new_loc.as_mut_ptr())
+  }
+}
+
+// take 2: avoids temporarily owning a copy in rust space
+pub fn TakeByValueUsingMutRef(value: Pin<&mut InlineString>) {
+  unsafe {
+    ffi_TakeByValue(value.get_unchecked_mut());
+  }
+}
+
+// for rvalue references, in general, we can't avoid just using &mut.
+// There is not necessarily any way to indicate to the caller, after all,
+// that a move occurred!
+pub fn TakeByRR(value: Pin<&mut InlineString>, x: isize) {
+  unsafe {
+    ffi_TakeByRR(value.get_unchecked_mut(), x as std::os::raw::c_int /* isize vs int is not the interesting part here */)
   }
 }
 
